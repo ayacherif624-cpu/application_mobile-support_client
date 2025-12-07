@@ -13,6 +13,7 @@
   http: ^1.2.0
   shared_preferences: ^2.2.2
   jwt_decoder: ^2.0.1
+  fl_chart: ^0.68.0
 
   cupertino_icons: ^1.0.8
 

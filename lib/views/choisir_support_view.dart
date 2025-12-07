@@ -17,9 +17,16 @@ class ChoisirSupportView extends StatelessWidget {
     );
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FF),
+
+      // ✅ APPBAR MODERNE
       appBar: AppBar(
         title: const Text("Choisir un support"),
+        centerTitle: true,
+        backgroundColor: Colors.blue.shade700,
+        elevation: 6,
       ),
+
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -30,7 +37,10 @@ class ChoisirSupportView extends StatelessWidget {
           // ✅ ERREUR FIRESTORE
           if (snapshot.hasError) {
             return const Center(
-              child: Text("❌ Erreur de chargement des supports"),
+              child: Text(
+                "❌ Erreur de chargement des supports",
+                style: TextStyle(fontSize: 16),
+              ),
             );
           }
 
@@ -39,28 +49,40 @@ class ChoisirSupportView extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // ✅ DONNÉES VIDES
-          if (snapshot.connectionState == ConnectionState.active &&
-              (!snapshot.hasData || snapshot.data!.docs.isEmpty)) {
+          // ✅ LISTE VIDE
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
-              child: Text("Aucun agent support disponible"),
+              child: Text(
+                "Aucun agent support disponible",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
             );
           }
 
           final supports = snapshot.data!.docs;
 
           return ListView.builder(
+            padding: const EdgeInsets.all(12),
             itemCount: supports.length,
             itemBuilder: (context, index) {
               final support = supports[index];
               final data = support.data() as Map<String, dynamic>;
 
-              return Card(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                elevation: 4,
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -73,36 +95,28 @@ class ChoisirSupportView extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
 
-                      // ✅ EMAIL
-                      Text("📧 Email : ${data['email'] ?? 'Non défini'}"),
+                      _infoLigne("📧", "Email", data['email']),
+                      _infoLigne("💼", "Poste", data['Poste']),
+                      _infoLigne("🟢", "Urgence", data['Disponibilité d’urgence']),
+                      _infoLigne("⏰", "Horaires", data['Horaires']),
+                      _infoLigne("📅", "Jours", data['Jours de travail']),
 
-                      // ✅ POSTE
-                      Text("💼 Poste : ${data['Poste'] ?? 'Non défini'}"),
+                      const SizedBox(height: 14),
 
-                      // ✅ DISPONIBILITÉ
-                      Text(
-                        "🟢 Urgence : ${data['Disponibilité d’urgence'] ?? 'Non définie'}",
-                      ),
-
-                      // ✅ HORAIRES
-                      Text(
-                        "⏰ Horaires : ${data['Horaires'] ?? 'Non définis'}",
-                      ),
-
-                      // ✅ JOURS DE TRAVAIL
-                      Text(
-                        "📅 Jours : ${data['Jours de travail'] ?? 'Non définis'}",
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // ✅ BOUTON AFFECTER
+                      // ✅ BOUTON AFFECTER MODERNE
                       Align(
                         alignment: Alignment.centerRight,
-                        child: ElevatedButton(
-                          child: const Text("Affecter"),
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.assignment_turned_in),
+                          label: const Text("Affecter"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade700,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
                           onPressed: () async {
                             try {
                               await controller.assignTicket(
@@ -112,8 +126,8 @@ class ChoisirSupportView extends StatelessWidget {
 
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                      "✅ Ticket affecté avec succès"),
+                                  content:
+                                      Text("✅ Ticket affecté avec succès"),
                                   backgroundColor: Colors.green,
                                 ),
                               );
@@ -138,6 +152,17 @@ class ChoisirSupportView extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  // ✅ LIGNE D’INFO UI PROPRE
+  Widget _infoLigne(String emoji, String label, dynamic value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Text(
+        "$emoji $label : ${value ?? 'Non défini'}",
+        style: const TextStyle(fontSize: 13.5),
       ),
     );
   }

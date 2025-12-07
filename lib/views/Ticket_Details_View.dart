@@ -12,25 +12,28 @@ class DetailTicketAdminView extends StatelessWidget {
     required this.roleUtilisateur,
   });
 
-  // ✅ FONCTION SÉCURISÉE POUR MODIFIER LA PRIORITÉ
+  // ✅ DIALOG MODERNE POUR CHANGER LA PRIORITÉ
   void _changerPriorite(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) {
-        // ✅ Normalisation totale pour éviter les crashs
         String nouvellePriorite = ticket.priorite.toLowerCase();
-
         final List<String> priorites = ['faible', 'moyenne', 'haute'];
 
-        // ✅ Sécurité si Firestore contient une valeur invalide
         if (!priorites.contains(nouvellePriorite)) {
           nouvellePriorite = 'moyenne';
         }
 
         return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           title: const Text("Modifier la priorité"),
           content: DropdownButtonFormField<String>(
             value: nouvellePriorite,
+            decoration: const InputDecoration(
+              labelText: "Priorité",
+              border: OutlineInputBorder(),
+            ),
             items: priorites.map((p) {
               return DropdownMenuItem(
                 value: p,
@@ -61,6 +64,7 @@ class DetailTicketAdminView extends StatelessWidget {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
+                    backgroundColor: Colors.green,
                     content: Text("✅ Priorité modifiée avec succès"),
                   ),
                 );
@@ -76,42 +80,94 @@ class DetailTicketAdminView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FF),
+
+      // ✅ APPBAR MODERNE
       appBar: AppBar(
         title: const Text("Détails du ticket"),
+        centerTitle: true,
+        backgroundColor: Colors.blue.shade700,
+        elevation: 6,
       ),
-      body: Padding(
+
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Titre : ${ticket.titre}",
-                style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
+            // ✅ CARTE PRINCIPALE
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _infoLigne("Titre", ticket.titre),
+                  _infoLigne("Description", ticket.description),
+                  _infoLigne("Statut", ticket.status),
+                  _infoLigne("Priorité", ticket.priorite),
+                  _infoLigne("Créé par", ticket.userId),
+                  _infoLigne("Rôle", roleUtilisateur),
+                ],
+              ),
+            ),
 
-            Text("Description : ${ticket.description}"),
-            const SizedBox(height: 8),
-
-            Text("Statut : ${ticket.status}"),
-            const SizedBox(height: 8),
-
-            Text("Priorité : ${ticket.priorite}"),
-            const SizedBox(height: 8),
-
-            Text("Créé par : ${ticket.userId}"),
-            const SizedBox(height: 8),
-
-            Text("Rôle : $roleUtilisateur"),
             const SizedBox(height: 30),
 
-            // ✅ BOUTON ADMIN 100% FONCTIONNEL
+            // ✅ BOUTON ADMIN
             if (roleUtilisateur == 'admin')
-              ElevatedButton.icon(
-                onPressed: () => _changerPriorite(context),
-                icon: const Icon(Icons.edit),
-                label: const Text("Modifier la priorité"),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _changerPriorite(context),
+                  icon: const Icon(Icons.edit),
+                  label: const Text("Modifier la priorité"),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.all(14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ✅ LIGNE D'INFOS MODERNE
+  Widget _infoLigne(String label, String valeur) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$label : ",
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.blue,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              valeur,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
       ),
     );
   }
