@@ -24,6 +24,7 @@ class ListeTicketsView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mes Tickets')),
+
       body: SafeArea(
         child: StreamBuilder<List<TicketModel>>(
           stream: ticketController.getTicketsParUtilisateur(userId),
@@ -42,8 +43,10 @@ class ListeTicketsView extends StatelessWidget {
               return const Center(child: Text('Aucun ticket trouvé'));
             }
 
+            // ✅ ✅ ✅ SCROLL GLOBAL PROPRE
             return ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 90),
               itemCount: tickets.length,
               itemBuilder: (context, index) {
                 final ticket = tickets[index];
@@ -51,7 +54,8 @@ class ListeTicketsView extends StatelessWidget {
                 final statutColor = _getStatusColor(statutText);
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -77,147 +81,166 @@ class ListeTicketsView extends StatelessWidget {
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildInfoText("Description", ticket.description),
-                            _buildInfoText(
-                              "Assigné à",
-                              ticket.assignerId ?? "Non assigné",
-                            ),
-                            _buildInfoText(
-                              "Date",
-                              ticket.createdAt.toLocal().toString(),
-                            ),
 
-                            const SizedBox(height: 10),
+                        // ✅ ✅ ✅ SCROLL À L’INTÉRIEUR DU TICKET
+                        child: SizedBox(
+                          height: 260,
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildInfoText(
+                                    "Description", ticket.description),
+                                _buildInfoText(
+                                  "Assigné à",
+                                  ticket.assignerId ?? "Non assigné",
+                                ),
+                                _buildInfoText(
+                                  "Date",
+                                  ticket.createdAt.toLocal().toString(),
+                                ),
 
-                            // ✅ ✅ ✅ AFFICHAGE DES PIÈCES JOINTES (CORRIGÉ)
-                            if (ticket.attachments.isNotEmpty) ...[
-                              const Text(
-                                "Pièces jointes :",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 10,
-                                children: ticket.attachments.map((url) {
-                                  final isImage = url.endsWith(".jpg") ||
-                                      url.endsWith(".png") ||
-                                      url.endsWith(".jpeg") ||
-                                      url.endsWith(".webp");
+                                const SizedBox(height: 10),
 
-                                  return ActionChip(
-                                    avatar: Icon(
-                                      isImage
-                                          ? Icons.image
-                                          : Icons.insert_drive_file,
+                                // ✅ ✅ ✅ PIÈCES JOINTE
+                                if (ticket.attachments.isNotEmpty) ...[
+                                  const Text(
+                                    "Pièces jointes :",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // ✅ ✅ ✅ SCROLL HORIZONTAL
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: ticket.attachments.map((url) {
+                                        final isImage = url.endsWith(".jpg") ||
+                                            url.endsWith(".png") ||
+                                            url.endsWith(".jpeg") ||
+                                            url.endsWith(".webp");
+
+                                        return Padding(
+                                          padding:
+                                              const EdgeInsets.only(right: 8),
+                                          child: ActionChip(
+                                            avatar: Icon(
+                                              isImage
+                                                  ? Icons.image
+                                                  : Icons
+                                                      .insert_drive_file_outlined,
+                                            ),
+                                            label: const Text("Ouvrir"),
+                                            onPressed: () async {
+                                              try {
+                                                final uri = Uri.parse(url);
+                                                if (!await launchUrl(
+                                                  uri,
+                                                  mode: LaunchMode
+                                                      .externalApplication,
+                                                )) {
+                                                  throw "Erreur ouverture";
+                                                }
+                                              } catch (_) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                        "Impossible d'ouvrir le fichier"),
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                        );
+                                      }).toList(),
                                     ),
-                                    label: const Text("Ouvrir"),
-                                    onPressed: () async {
-                                      try {
-                                        final uri = Uri.parse(url);
-                                        if (!await launchUrl(
-                                          uri,
-                                          mode: LaunchMode.externalApplication,
-                                        )) {
-                                          throw "Impossible d'ouvrir le lien";
-                                        }
-                                      } catch (e) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              "Erreur lors de l'ouverture du fichier",
+                                  ),
+                                ],
+
+                                const SizedBox(height: 12),
+
+                                // ✅ ✅ ✅ BOUTONS ACTIONS
+                                Wrap(
+                                  spacing: 8,
+                                  children: [
+                                    _buildActionButton(
+                                      icon: Icons.edit,
+                                      color: Colors.blue,
+                                      label: "Modifier",
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                ModifierTicketView(
+                                              ticket: ticket,
                                             ),
                                           ),
                                         );
-                                      }
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-
-                            const SizedBox(height: 12),
-
-                            // ✅ ✅ ✅ BOUTONS ACTIONS
-                            Wrap(
-                              spacing: 8,
-                              children: [
-                                _buildActionButton(
-                                  icon: Icons.edit,
-                                  color: Colors.blue,
-                                  label: "Modifier",
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ModifierTicketView(
-                                          ticket: ticket,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                _buildActionButton(
-                                  icon: Icons.delete,
-                                  color: Colors.red,
-                                  label: "Supprimer",
-                                  onPressed: () async {
-                                    final confirm =
-                                        await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: const Text(
-                                            "Confirmer la suppression"),
-                                        content: const Text(
-                                            "Voulez-vous vraiment supprimer ce ticket ?"),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: const Text("Annuler"),
+                                      },
+                                    ),
+                                    _buildActionButton(
+                                      icon: Icons.delete,
+                                      color: Colors.red,
+                                      label: "Supprimer",
+                                      onPressed: () async {
+                                        final confirm =
+                                            await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text(
+                                                "Confirmer la suppression"),
+                                            content: const Text(
+                                                "Supprimer ce ticket ?"),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                    context, false),
+                                                child: const Text("Annuler"),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                    context, true),
+                                                child: const Text(
+                                                  "Supprimer",
+                                                  style: TextStyle(
+                                                      color: Colors.red),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: const Text(
-                                              "Supprimer",
-                                              style:
-                                                  TextStyle(color: Colors.red),
+                                        );
+
+                                        if (confirm == true) {
+                                          await ticketController
+                                              .supprimerTicket(ticket.id!);
+                                        }
+                                      },
+                                    ),
+                                    _buildActionButton(
+                                      icon: Icons.chat,
+                                      color: Colors.green,
+                                      label: "Discussion",
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => ChatView(
+                                              ticketId: ticket.id!,
+                                              currentUserId: userId,
+                                              userType: roleUtilisateur,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    );
-
-                                    if (confirm == true) {
-                                      await ticketController
-                                          .supprimerTicket(ticket.id!);
-                                    }
-                                  },
-                                ),
-                                _buildActionButton(
-                                  icon: Icons.chat,
-                                  color: Colors.green,
-                                  label: "Discussion",
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ChatView(
-                                          ticketId: ticket.id!,
-                                          currentUserId: userId,
-                                          userType: roleUtilisateur,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ],

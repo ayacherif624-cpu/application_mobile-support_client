@@ -144,7 +144,7 @@ class _ModifierTicketViewState extends State<ModifierTicketView> {
                 // ✅ PRIORITÉ
                 DropdownButtonFormField<String>(
                   value: priorite,
-                  items: ["Faible", "Moyenne", "Haute"]
+                  items: ["Faible", "moyenne", "Haute"]
                       .map(
                         (e) => DropdownMenuItem(
                           value: e,

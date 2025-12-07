@@ -21,13 +21,8 @@ class _CreateTicketViewState extends State<CreateTicketView> {
   String categorie = "Technique";
 
   bool isLoading = false;
-
-  // ✅ FICHIERS LOCAUX SEULEMENT
   List<PlatformFile> pickedFiles = [];
 
-  // ===========================
-  // ✅ PICK FILES (GRATUIT)
-  // ===========================
   Future<void> pickFiles() async {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
@@ -40,9 +35,6 @@ class _CreateTicketViewState extends State<CreateTicketView> {
     }
   }
 
-  // ===========================
-  // ✅ CREATE TICKET (SANS UPLOAD)
-  // ===========================
   void _createTicket() async {
     if (_titleController.text.isEmpty ||
         _descriptionController.text.isEmpty) {
@@ -55,7 +47,6 @@ class _CreateTicketViewState extends State<CreateTicketView> {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      // ✅ ON GARDE JUSTE LES NOMS DES FICHIERS
       List<String> fileNames =
           pickedFiles.map((file) => file.name).toList();
 
@@ -67,7 +58,7 @@ class _CreateTicketViewState extends State<CreateTicketView> {
         categorie: categorie,
         status: "Nouveau",
         assignerId: null,
-        attachments: fileNames, // ✅ JUSTE LES NOMS
+        attachments: fileNames,
         createdAt: DateTime.now(),
       );
 
@@ -99,92 +90,209 @@ class _CreateTicketViewState extends State<CreateTicketView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Créer un Ticket")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Card(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 6,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(labelText: "Titre"),
-                ),
-
-                const SizedBox(height: 10),
-
-                TextField(
-                  controller: _descriptionController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(labelText: "Description"),
-                ),
-
-                const SizedBox(height: 15),
-
-                DropdownButtonFormField(
-                  value: priorite,
-                  items: ["Faible", "Moyenne", "Haute"]
-                      .map((e) =>
-                          DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (v) => setState(() => priorite = v!),
-                  decoration: const InputDecoration(labelText: "Priorité"),
-                ),
-
-                const SizedBox(height: 10),
-
-                DropdownButtonFormField(
-                  value: categorie,
-                  items: ["Technique", "Comptabilité", "Autre"]
-                      .map((e) =>
-                          DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (v) => setState(() => categorie = v!),
-                  decoration: const InputDecoration(labelText: "Catégorie"),
-                ),
-
-                const SizedBox(height: 20),
-
-                // ✅ JOINDRE DES FICHIERS (LOCAL)
-                OutlinedButton.icon(
-                  onPressed: pickFiles,
-                  icon: const Icon(Icons.attach_file),
-                  label: const Text("Joindre des fichiers"),
-                ),
-
-                const SizedBox(height: 10),
-
-                if (pickedFiles.isNotEmpty)
-                  Wrap(
-                    spacing: 10,
-                    children: pickedFiles.map((file) {
-                      return Chip(
-                        label: Text(file.name),
-                        deleteIcon: const Icon(Icons.close),
-                        onDeleted: () {
-                          setState(() {
-                            pickedFiles.remove(file);
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-
-                const SizedBox(height: 25),
-
-                ElevatedButton(
-                  onPressed: isLoading ? null : _createTicket,
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Créer Ticket"),
-                ),
-              ],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF2196F3), Color(0xFF90CAF9)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+
+              // ✅ APPBAR PERSONNALISÉ
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "Créer un Ticket",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  ],
+                ),
+              ),
+
+              // ✅ CONTAINER PRINCIPAL
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+
+                        // ✅ TITRE
+                        _modernInput(
+                          controller: _titleController,
+                          label: "Titre",
+                          icon: Icons.title,
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        // ✅ DESCRIPTION
+                        _modernInput(
+                          controller: _descriptionController,
+                          label: "Description",
+                          icon: Icons.description,
+                          maxLines: 4,
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ✅ PRIORITE
+                        _modernDropdown(
+                          label: "Priorité",
+                          value: priorite,
+                          icon: Icons.priority_high,
+                          items: ["Faible", "Moyenne", "Haute"],
+                          onChanged: (v) => setState(() => priorite = v!),
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        // ✅ CATEGORIE
+                        _modernDropdown(
+                          label: "Catégorie",
+                          value: categorie,
+                          icon: Icons.category,
+                          items: ["Technique", "Comptabilité", "Autre"],
+                          onChanged: (v) => setState(() => categorie = v!),
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        // ✅ FICHIERS
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: OutlinedButton.icon(
+                            onPressed: pickFiles,
+                            icon: const Icon(Icons.attach_file),
+                            label: const Text("Joindre des fichiers"),
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        if (pickedFiles.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: pickedFiles.map((file) {
+                              return Chip(
+                                backgroundColor: Colors.blue[50],
+                                label: Text(file.name),
+                                deleteIcon: const Icon(Icons.close, size: 18),
+                                onDeleted: () {
+                                  setState(() {
+                                    pickedFiles.remove(file);
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+
+                        const SizedBox(height: 30),
+
+                        // ✅ BOUTON PRINCIPAL
+                        SizedBox(
+                          width: double.infinity,
+                          height: 55,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed:
+                                isLoading ? null : _createTicket,
+                            child: isLoading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : const Text(
+                                    "Créer le Ticket",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ CHAMP TEXTE MODERNE
+  Widget _modernInput({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: Colors.grey[100],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  // ✅ DROPDOWN MODERNE
+  Widget _modernDropdown({
+    required String label,
+    required String value,
+    required IconData icon,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      items: items
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: Colors.grey[100],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
       ),
     );

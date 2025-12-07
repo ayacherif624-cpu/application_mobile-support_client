@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
@@ -50,9 +50,11 @@ class DevMobSupportClientApp extends StatelessWidget {
       // ✅ ROUTES SANS ARGUMENTS
       routes: {
         '/': (context) => const LoginView(),
+         '/login': (context) => LoginView(),
         '/register': (context) => const RegisterView(),
         '/client': (context) => HomeClient(),
         '/support': (context) => const SupportHomeView(
+
               userId: '',
               roleUtilisateur: 'support',
             ),
@@ -61,6 +63,7 @@ class DevMobSupportClientApp extends StatelessWidget {
               roleUtilisateur: 'admin',
             ),
         '/create-ticket': (context) => const CreateTicketView(userId: ''),
+        '/login': (context) => LoginView(),
         '/support-admin-tickets': (context) => const AdminTicketListView(),
         '/admin-stats': (context) => AdminStatsView(),
         '/tickets-a-affecter': (context) => const TicketsAAffecterView(),

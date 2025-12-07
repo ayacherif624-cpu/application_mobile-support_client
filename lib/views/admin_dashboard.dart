@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AdminDashboard extends StatelessWidget {
   final String userId;
@@ -9,6 +10,17 @@ class AdminDashboard extends StatelessWidget {
     required this.userId,
     required this.roleUtilisateur,
   });
+
+  // ✅ DÉCONNEXION + REDIRECTION LOGIN
+  Future<void> logout(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login', // ✅ ta page de connexion
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,17 +37,41 @@ class AdminDashboard extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6FF),
+
+      // ✅ ✅ ✅ APPBAR AVEC BOUTON DÉCONNEXION
       appBar: AppBar(
         title: const Text("Dashboard Administrateur"),
         centerTitle: true,
         backgroundColor: Colors.blue.shade700,
         elevation: 6,
+        actions: [
+          TextButton.icon(
+            onPressed: () => logout(context),
+            icon: const Icon(Icons.logout, color: Colors.white),
+            label: const Text(
+              "Déconnexion",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.red.withOpacity(0.9),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // ✅ HEADER ADMIN SIMPLIFIÉ (SANS ID & RÔLE)
+            // ✅ HEADER ADMIN
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
@@ -78,7 +114,7 @@ class AdminDashboard extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // ✅ DASHBOARD EN GRILLE MODERNE
+            // ✅ DASHBOARD EN GRILLE
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -92,7 +128,8 @@ class AdminDashboard extends StatelessWidget {
                   subtitle: "Liste complète",
                   color: Colors.indigo,
                   onTap: () {
-                    Navigator.pushNamed(context, '/support-admin-tickets');
+                    Navigator.pushNamed(
+                        context, '/support-admin-tickets');
                   },
                 ),
                 _dashboardGridCard(
@@ -101,7 +138,8 @@ class AdminDashboard extends StatelessWidget {
                   subtitle: "Sans agent",
                   color: Colors.orange,
                   onTap: () {
-                    Navigator.pushNamed(context, '/tickets-a-affecter');
+                    Navigator.pushNamed(
+                        context, '/tickets-a-affecter');
                   },
                 ),
                 _dashboardGridCard(
