@@ -14,10 +14,9 @@ class AdminDashboard extends StatelessWidget {
   // ✅ DÉCONNEXION + REDIRECTION LOGIN
   Future<void> logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
-
     Navigator.pushNamedAndRemoveUntil(
       context,
-      '/login', // ✅ ta page de connexion
+      '/login',
       (route) => false,
     );
   }
@@ -38,7 +37,7 @@ class AdminDashboard extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6FF),
 
-      // ✅ ✅ ✅ APPBAR AVEC BOUTON DÉCONNEXION
+      // ✅ ✅ ✅ APPBAR AVEC PETIT BOUTON DÉCONNEXION (SANS ROUGE)
       appBar: AppBar(
         title: const Text("Dashboard Administrateur"),
         centerTitle: true,
@@ -47,23 +46,20 @@ class AdminDashboard extends StatelessWidget {
         actions: [
           TextButton.icon(
             onPressed: () => logout(context),
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(
+              Icons.logout,
+              color: Colors.white,
+              size: 18,
+            ),
             label: const Text(
               "Déconnexion",
               style: TextStyle(
                 color: Colors.white,
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.red.withOpacity(0.9),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-            ),
           ),
-          const SizedBox(width: 10),
         ],
       ),
 
@@ -89,8 +85,8 @@ class AdminDashboard extends StatelessWidget {
                 ],
               ),
               child: Row(
-                children: [
-                  const CircleAvatar(
+                children: const [
+                  CircleAvatar(
                     radius: 32,
                     backgroundColor: Colors.white,
                     child: Icon(
@@ -99,8 +95,8 @@ class AdminDashboard extends StatelessWidget {
                       color: Colors.blue,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  const Text(
+                  SizedBox(width: 16),
+                  Text(
                     "Bienvenue Administrateur",
                     style: TextStyle(
                       color: Colors.white,
@@ -128,8 +124,7 @@ class AdminDashboard extends StatelessWidget {
                   subtitle: "Liste complète",
                   color: Colors.indigo,
                   onTap: () {
-                    Navigator.pushNamed(
-                        context, '/support-admin-tickets');
+                    Navigator.pushNamed(context, '/support-admin-tickets');
                   },
                 ),
                 _dashboardGridCard(
@@ -138,8 +133,7 @@ class AdminDashboard extends StatelessWidget {
                   subtitle: "Sans agent",
                   color: Colors.orange,
                   onTap: () {
-                    Navigator.pushNamed(
-                        context, '/tickets-a-affecter');
+                    Navigator.pushNamed(context, '/tickets-a-affecter');
                   },
                 ),
                 _dashboardGridCard(

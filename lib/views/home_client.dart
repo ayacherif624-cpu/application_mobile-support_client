@@ -44,7 +44,7 @@ class _HomeClientState extends State<HomeClient> {
 
     Navigator.pushNamedAndRemoveUntil(
       context,
-      '/login', // ✅ ta page de connexion
+      '/login',
       (route) => false,
     );
   }
@@ -105,25 +105,20 @@ class _HomeClientState extends State<HomeClient> {
 
                           const Spacer(),
 
-                          // ✅ ✅ ✅ BOUTON DÉCONNEXION AVEC TEXTE
+                          // ✅ ✅ ✅ BOUTON DÉCONNEXION PETIT (SANS ROUGE)
                           TextButton.icon(
                             onPressed: logout,
-                            icon: const Icon(Icons.logout, color: Colors.white),
+                            icon: const Icon(
+                              Icons.logout,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                             label: const Text(
                               "Déconnexion",
                               style: TextStyle(
                                 color: Colors.white,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            style: TextButton.styleFrom(
-                              backgroundColor: Colors.red.withOpacity(0.9),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
                               ),
                             ),
                           ),
@@ -195,7 +190,7 @@ class _HomeClientState extends State<HomeClient> {
     );
   }
 
-  // ✅ WIDGET BOUTON MODERNE
+  // ✅ BOUTON MODERNE
   Widget _modernCardButton({
     required IconData icon,
     required String title,
