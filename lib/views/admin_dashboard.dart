@@ -75,7 +75,8 @@ class AdminDashboard extends StatelessWidget {
               ),
             ),
 
-            // ✅ ✅ NOUVEAU — GESTION DES PRIORITÉS
+            // ❌❌❌ SUPPRIMÉ : accès direct interdit car aucun ticket fourni
+            /*
             Card(
               child: ListTile(
                 leading: const Icon(Icons.priority_high),
@@ -84,11 +85,12 @@ class AdminDashboard extends StatelessWidget {
                 onTap: () {
                   Navigator.pushNamed(
                     context,
-                    '/admin-priorites', // ✅ nouvelle route
+                    '/admin-priorites',
                   );
                 },
               ),
             ),
+            */
 
             // ✅ STATISTIQUES
             Card(

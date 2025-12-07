@@ -1,24 +1,31 @@
- import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../controllers/ticket_controller.dart';
+import '../models/ticket.dart';
 
 class AdminTicketListView extends StatelessWidget {
   const AdminTicketListView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Provider.of<TicketController>(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Affectation des tickets")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('tickets')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, ticketSnapshot) {
-          if (!ticketSnapshot.hasData) {
+      appBar: AppBar(
+        title: const Text("Tous les tickets"),
+      ),
+      body: StreamBuilder<List<TicketModel>>(
+        stream: controller.getTousLesTickets(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final tickets = ticketSnapshot.data!.docs;
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Aucun ticket"));
+          }
+
+          final tickets = snapshot.data!;
 
           return ListView.builder(
             itemCount: tickets.length,
@@ -26,52 +33,22 @@ class AdminTicketListView extends StatelessWidget {
               final ticket = tickets[index];
 
               return Card(
-                margin: const EdgeInsets.all(10),
                 child: ListTile(
-                  title: Text(ticket['title']),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Statut: ${ticket['status']}"),
-                      Text("Priorité: ${ticket['priority']}"),
-                      Text("Assigné à: ${ticket['assignedTo'] ?? 'Non affecté'}"),
-                      const SizedBox(height: 8),
+                  title: Text(ticket.titre),
+                  subtitle: Text("Statut : ${ticket.status}"),
+                  trailing: const Icon(Icons.arrow_forward),
 
-                      // ✅ DROPDOWN DES MEMBRES SUPPORT
-                      StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('users')
-                            .where('role', isEqualTo: 'support')
-                            .snapshots(),
-                        builder: (context, userSnapshot) {
-                          if (!userSnapshot.hasData) {
-                            return const CircularProgressIndicator();
-                          }
-
-                          final supports = userSnapshot.data!.docs;
-
-                          return DropdownButton<String>(
-                            hint: const Text("Affecter à un membre"),
-                            onChanged: (supportId) {
-                              FirebaseFirestore.instance
-                                  .collection('tickets')
-                                  .doc(ticket.id)
-                                  .update({
-                                'assignedTo': supportId,
-                                'status': 'en cours'
-                              });
-                            },
-                            items: supports.map((support) {
-                              return DropdownMenuItem(
-                                value: support.id,
-                                child: Text(support['nom']),
-                              );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                  // ✅✅✅ NAVIGATION CORRECTE
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/admin-priorites',
+                      arguments: {
+                        'ticket': ticket,
+                        'roleUtilisateur': 'admin',
+                      },
+                    );
+                  },
                 ),
               );
             },

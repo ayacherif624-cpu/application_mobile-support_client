@@ -1,59 +1,117 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../controllers/ticket_controller.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/ticket.dart';
 
-class AdminTicketListView extends StatelessWidget {
-  const AdminTicketListView({super.key});
+class DetailTicketAdminView extends StatelessWidget {
+  final TicketModel ticket;
+  final String roleUtilisateur;
+
+  const DetailTicketAdminView({
+    super.key,
+    required this.ticket,
+    required this.roleUtilisateur,
+  });
+
+  // ✅ FONCTION SÉCURISÉE POUR MODIFIER LA PRIORITÉ
+  void _changerPriorite(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        // ✅ Normalisation totale pour éviter les crashs
+        String nouvellePriorite = ticket.priorite.toLowerCase();
+
+        final List<String> priorites = ['faible', 'moyenne', 'haute'];
+
+        // ✅ Sécurité si Firestore contient une valeur invalide
+        if (!priorites.contains(nouvellePriorite)) {
+          nouvellePriorite = 'moyenne';
+        }
+
+        return AlertDialog(
+          title: const Text("Modifier la priorité"),
+          content: DropdownButtonFormField<String>(
+            value: nouvellePriorite,
+            items: priorites.map((p) {
+              return DropdownMenuItem(
+                value: p,
+                child: Text(p.toUpperCase()),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                nouvellePriorite = value;
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Annuler"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await FirebaseFirestore.instance
+                    .collection('tickets')
+                    .doc(ticket.id)
+                    .update({
+                  'priorite': nouvellePriorite,
+                });
+
+                Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("✅ Priorité modifiée avec succès"),
+                  ),
+                );
+              },
+              child: const Text("Modifier"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final controller = Provider.of<TicketController>(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Tous les tickets"),
+        title: const Text("Détails du ticket"),
       ),
-      body: StreamBuilder<List<TicketModel>>(
-        stream: controller.getTousLesTickets(), // ✅ EXISTE MAINTENANT
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Titre : ${ticket.titre}",
+                style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 8),
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("Aucun ticket"));
-          }
+            Text("Description : ${ticket.description}"),
+            const SizedBox(height: 8),
 
-          final tickets = snapshot.data!;
+            Text("Statut : ${ticket.status}"),
+            const SizedBox(height: 8),
 
-          return ListView.builder(
-            itemCount: tickets.length,
-            itemBuilder: (context, index) {
-              final ticket = tickets[index];
+            Text("Priorité : ${ticket.priorite}"),
+            const SizedBox(height: 8),
 
-              return Card(
-                child: ListTile(
-                  title: Text(ticket.titre),
-                  subtitle: Text("Statut : ${ticket.status}"),
-                  trailing: const Icon(Icons.arrow_forward),
+            Text("Créé par : ${ticket.userId}"),
+            const SizedBox(height: 8),
 
-                  // ✅✅✅ NAVIGATION PARFAITEMENT CORRECTE
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/admin-priorites',
-                      arguments: {
-                        'ticket': ticket,           // ✅ TRANSMIS
-                        'roleUtilisateur': 'admin', // ✅ TRANSMIS
-                      },
-                    );
-                  },
-                ),
-              );
-            },
-          );
-        },
+            Text("Rôle : $roleUtilisateur"),
+            const SizedBox(height: 30),
+
+            // ✅ BOUTON ADMIN 100% FONCTIONNEL
+            if (roleUtilisateur == 'admin')
+              ElevatedButton.icon(
+                onPressed: () => _changerPriorite(context),
+                icon: const Icon(Icons.edit),
+                label: const Text("Modifier la priorité"),
+              ),
+          ],
+        ),
       ),
     );
   }

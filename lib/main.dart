@@ -12,7 +12,7 @@ import 'views/SupportHome_view.dart';
 import 'views/create_ticket_screen.dart';
 import 'views/home_client.dart';
 import 'views/admin_dashboard.dart';
-import 'views/admin_ticket_list.dart' hide AdminTicketListView;
+import 'views/admin_ticket_list.dart';
 import 'views/admin_stats_view.dart';
 
 // ✅ CONTROLLERS
@@ -45,62 +45,40 @@ class DevMobSupportClientApp extends StatelessWidget {
     return MaterialApp(
       title: 'DEVMOB SUPPORTCLIENT',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/',
 
       // ✅ ROUTES SANS ARGUMENTS
       routes: {
         '/': (context) => const LoginView(),
         '/register': (context) => const RegisterView(),
-
-        '/client': (context) {
-          final auth = Provider.of<AuthController>(context, listen: false);
-          final user = auth.currentUser;
-          if (user == null) return const LoginView();
-          return HomeClient();
-        },
-
-        '/support': (context) {
-          final auth = Provider.of<AuthController>(context, listen: false);
-          final user = auth.currentUser;
-          if (user == null) return const LoginView();
-          return SupportHomeView(
-            userId: user.uid,
-            roleUtilisateur: user.role ?? 'support',
-          );
-        },
-
-        '/admin': (context) {
-          final auth = Provider.of<AuthController>(context, listen: false);
-          final user = auth.currentUser;
-          if (user == null) return const LoginView();
-          return AdminDashboard(
-            userId: user.uid,
-            roleUtilisateur: user.role ?? 'admin',
-          );
-        },
-
-        '/create-ticket': (context) {
-          final auth = Provider.of<AuthController>(context, listen: false);
-          final user = auth.currentUser;
-          if (user == null) return const LoginView();
-          return CreateTicketView(userId: user.uid);
-        },
-
-        '/support-admin-tickets': (context) => AdminTicketListView(),
+        '/client': (context) => HomeClient(),
+        '/support': (context) => const SupportHomeView(
+              userId: '',
+              roleUtilisateur: 'support',
+            ),
+        '/admin': (context) => const AdminDashboard(
+              userId: '',
+              roleUtilisateur: 'admin',
+            ),
+        '/create-ticket': (context) => const CreateTicketView(userId: ''),
+        '/support-admin-tickets': (context) => const AdminTicketListView(),
         '/admin-stats': (context) => AdminStatsView(),
         '/tickets-a-affecter': (context) => const TicketsAAffecterView(),
         '/choisir-support': (context) => const ChoisirSupportView(),
       },
 
-      // ✅✅✅ ROUTE AVEC ARGUMENTS PRIORITÉ (STABLE)
+      // ✅✅✅ ROUTE AVEC ARGUMENTS (DETAIL TICKET ADMIN)
       onGenerateRoute: (settings) {
         if (settings.name == '/admin-priorites') {
+          print("✅ Route /admin-priorites appelée");
+          print("📦 Arguments reçus : ${settings.arguments}");
+
           final args = settings.arguments as Map<String, dynamic>?;
 
           if (args == null ||
               !args.containsKey('ticket') ||
               !args.containsKey('roleUtilisateur')) {
+            print("❌ ERREUR : arguments invalides");
             return MaterialPageRoute(
               builder: (_) => const Scaffold(
                 body: Center(child: Text("❌ Aucun ticket fourni")),
@@ -111,9 +89,13 @@ class DevMobSupportClientApp extends StatelessWidget {
           final TicketModel ticket = args['ticket'];
           final String roleUtilisateur = args['roleUtilisateur'];
 
+          print("✅ Ticket reçu : ${ticket.titre}");
+          print("✅ Rôle reçu : $roleUtilisateur");
+
           return MaterialPageRoute(
-            builder: (_) => AdminTicketListView(
-               
+            builder: (_) => DetailTicketAdminView(
+              ticket: ticket,
+              roleUtilisateur: roleUtilisateur,
             ),
           );
         }
