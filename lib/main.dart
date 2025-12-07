@@ -1,24 +1,27 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_firebase/views/TicketsAAffecterView.dart';
+ 
+import 'package:flutter_firebase/views/choisir_support_view.dart';
 import 'package:provider/provider.dart';
 
-// ✅ VIEWS AUTH
+// ✅ AUTH
 import 'views/login_screen.dart';
 import 'views/registerView.dart';
 
-// ✅ VIEWS CLIENT & SUPPORT
+// ✅ CLIENT & SUPPORT
 import 'views/SupportHome_view.dart';
 import 'views/ticket_list_screen.dart';
 import 'views/create_ticket_screen.dart';
 import 'views/home_client.dart';
 
-// ✅ VIEWS ADMIN
+// ✅ ADMIN
 import 'views/admin_dashboard.dart';
 import 'views/admin_ticket_list.dart';
 import 'views/admin_users_view.dart';
 import 'views/admin_stats_view.dart';
 
-// ✅ CONTROLLERS (SANS ../)
+// ✅ CONTROLLERS
 import 'controllers/ticket_controller.dart';
 import 'controllers/auth_controller.dart';
 
@@ -47,6 +50,7 @@ class DevMobSupportClientApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/',
+
       routes: {
         // ✅ AUTH
         '/': (context) => const LoginView(),
@@ -73,7 +77,7 @@ class DevMobSupportClientApp extends StatelessWidget {
           );
         },
 
-        // ✅ ADMIN DASHBOARD
+        // ✅ ADMIN
         '/admin': (context) {
           final authController =
               Provider.of<AuthController>(context, listen: false);
@@ -85,7 +89,7 @@ class DevMobSupportClientApp extends StatelessWidget {
           );
         },
 
-        // ✅ CRÉATION TICKET
+        // ✅ CREATION TICKET
         '/create-ticket': (context) {
           final authController =
               Provider.of<AuthController>(context, listen: false);
@@ -95,9 +99,13 @@ class DevMobSupportClientApp extends StatelessWidget {
         },
 
         // ✅ ADMIN ROUTES
-        '/support-admin-tickets': (context) =>  AdminTicketListView(),
-        '/users-management': (context) =>  AdminUsersView(),
+        '/support-admin-tickets': (context) => AdminTicketListView(),
+        '/users-management': (context) => AdminUsersView(),
         '/admin-stats': (context) => AdminStatsView(),
+        '/tickets-a-affecter': (context) => const TicketsAAffecterView(),
+
+        // ✅ ✅ ✅ ROUTE AFFECTATION TICKET (CORRIGÉE)
+         '/choisir-support': (context) => const ChoisirSupportView(),
       },
     );
   }

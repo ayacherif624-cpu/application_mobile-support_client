@@ -1,11 +1,10 @@
- import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/ticket.dart';
 
 class TicketController extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ✅ Liste locale Admin & Support
   List<TicketModel> tickets = [];
 
   CollectionReference get _ticketsRef => _firestore.collection('tickets');
@@ -16,7 +15,6 @@ class TicketController extends ChangeNotifier {
   Future<void> ajouterTicket(TicketModel ticket) async {
     try {
       await _ticketsRef.add(ticket.toMap());
-      await fetchAllTickets();
     } catch (e) {
       debugPrint("❌ Erreur ajout ticket: $e");
       rethrow;
@@ -24,7 +22,7 @@ class TicketController extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ READ — Tickets d’un utilisateur
+  // ✅ READ — Tickets d’un utilisateur (STREAM)
   // ============================================================
   Stream<List<TicketModel>> getTicketsParUtilisateur(String userId) {
     return _ticketsRef
@@ -47,7 +45,6 @@ class TicketController extends ChangeNotifier {
   Future<void> modifierTicket(String ticketId, TicketModel ticket) async {
     try {
       await _ticketsRef.doc(ticketId).update(ticket.toMap());
-      await fetchAllTickets();
     } catch (e) {
       debugPrint("❌ Erreur modification: $e");
       rethrow;
@@ -55,7 +52,7 @@ class TicketController extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ UPDATE — Changer statut (SUPPORT)
+  // ✅ UPDATE — Changer statut
   // ============================================================
   Future<void> changerStatut({
     required String ticketId,
@@ -70,8 +67,6 @@ class TicketController extends ChangeNotifier {
       await _ticketsRef.doc(ticketId).update({
         'status': nouveauStatut,
       });
-
-      await fetchAllTickets();
     } catch (e) {
       debugPrint("❌ Erreur changement statut: $e");
       rethrow;
@@ -84,7 +79,6 @@ class TicketController extends ChangeNotifier {
   Future<void> supprimerTicket(String ticketId) async {
     try {
       await _ticketsRef.doc(ticketId).delete();
-      await fetchAllTickets();
     } catch (e) {
       debugPrint("❌ Erreur suppression: $e");
       rethrow;
@@ -92,7 +86,7 @@ class TicketController extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ ADMIN — Tous les tickets
+  // ✅ ADMIN — Tous les tickets (CHARGEMENT MANUEL)
   // ============================================================
   Future<void> fetchAllTickets() async {
     try {
@@ -114,7 +108,7 @@ class TicketController extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ ASSIGNATION — Affecter un support
+  // ✅ ✅ ✅ ASSIGNATION CORRECTE & STABLE
   // ============================================================
   Future<void> assignTicket({
     required String ticketId,
@@ -125,26 +119,6 @@ class TicketController extends ChangeNotifier {
         'assignerId': supportId,
         'status': 'En cours',
       });
-
-      int index = tickets.indexWhere((t) => t.id == ticketId);
-      if (index != -1) {
-        final old = tickets[index];
-
-        tickets[index] = TicketModel(
-          id: old.id,
-          titre: old.titre,
-          description: old.description,
-          priorite: old.priorite,
-          categorie: old.categorie,
-          status: 'En cours',
-          userId: old.userId,
-          assignerId: supportId,
-          attachments: old.attachments,
-          createdAt: old.createdAt,
-        );
-      }
-
-      notifyListeners();
     } catch (e) {
       debugPrint("❌ Erreur assignation: $e");
       rethrow;

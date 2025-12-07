@@ -1,4 +1,4 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class AdminDashboard extends StatelessWidget {
   final String userId;
@@ -34,7 +34,7 @@ class AdminDashboard extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // ✅ ✅ BOUTON 1 — TOUS LES TICKETS (INTERFACE SUPPORT/ADMIN)
+            // ✅ BOUTON 1 — TOUS LES TICKETS
             Card(
               child: ListTile(
                 leading: const Icon(Icons.confirmation_number),
@@ -42,13 +42,28 @@ class AdminDashboard extends StatelessWidget {
                 onTap: () {
                   Navigator.pushNamed(
                     context,
-                    '/support-admin-tickets', // ⚠️ Route correcte
+                    '/support-admin-tickets',
                   );
                 },
               ),
             ),
 
-            // ✅ ✅ BOUTON 2 — GESTION DES UTILISATEURS
+            // ✅ ✅ NOUVEAU — TICKETS NON AFFECTÉS
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.assignment_ind),
+                title: const Text("Tickets à affecter"),
+                subtitle: const Text("Tickets sans agent assigné"),
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/tickets-a-affecter',
+                  );
+                },
+              ),
+            ),
+
+            // ✅ BOUTON 2 — GESTION DES UTILISATEURS
             Card(
               child: ListTile(
                 leading: const Icon(Icons.people),
@@ -56,13 +71,13 @@ class AdminDashboard extends StatelessWidget {
                 onTap: () {
                   Navigator.pushNamed(
                     context,
-                    '/users-management', // à créer
+                    '/users-management',
                   );
                 },
               ),
             ),
 
-            // ✅ ✅ BOUTON 3 — STATISTIQUES
+            // ✅ BOUTON 3 — STATISTIQUES
             Card(
               child: ListTile(
                 leading: const Icon(Icons.bar_chart),
@@ -70,7 +85,7 @@ class AdminDashboard extends StatelessWidget {
                 onTap: () {
                   Navigator.pushNamed(
                     context,
-                    '/admin-stats', // à créer
+                    '/admin-stats',
                   );
                 },
               ),
