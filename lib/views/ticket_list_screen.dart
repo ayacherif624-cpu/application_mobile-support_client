@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../controllers/ticket_controller.dart';
 import '../models/ticket.dart';
 import 'create_ticket_screen.dart';
@@ -22,7 +24,6 @@ class ListeTicketsView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mes Tickets')),
-      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: StreamBuilder<List<TicketModel>>(
           stream: ticketController.getTicketsParUtilisateur(userId),
@@ -30,11 +31,13 @@ class ListeTicketsView extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
+
             if (snapshot.hasError) {
               return Center(child: Text('Erreur: ${snapshot.error}'));
             }
 
             final tickets = snapshot.data ?? [];
+
             if (tickets.isEmpty) {
               return const Center(child: Text('Aucun ticket trouvé'));
             }
@@ -44,27 +47,30 @@ class ListeTicketsView extends StatelessWidget {
               itemCount: tickets.length,
               itemBuilder: (context, index) {
                 final ticket = tickets[index];
-                final statutText = ticket.status ?? "Nouveau";
+                final statutText = ticket.status;
                 final statutColor = _getStatusColor(statutText);
-                final attachments = ticket.attachments ?? [];
 
                 return Card(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 3,
                   child: ExpansionTile(
                     title: Text(
-                      ticket.title ?? "Titre inconnu",
+                      ticket.titre,
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     leading: Chip(
                       label: Text(
                         statutText,
                         style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       backgroundColor: statutColor,
                     ),
@@ -75,117 +81,141 @@ class ListeTicketsView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _buildInfoText("Description", ticket.description),
-                            _buildInfoText("Priorité", ticket.priority),
-                            _buildInfoText("Catégorie", ticket.category),
-                            const SizedBox(height: 8),
+                            _buildInfoText(
+                              "Assigné à",
+                              ticket.assignerId ?? "Non assigné",
+                            ),
+                            _buildInfoText(
+                              "Date",
+                              ticket.createdAt.toLocal().toString(),
+                            ),
 
-                            // Images
-                            if (attachments.isNotEmpty)
-                              SizedBox(
-                                height: 120,
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: attachments.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 8),
-                                  itemBuilder: (context, imgIndex) {
-                                    final imgUrl = attachments[imgIndex];
-                                    return Image.network(
-                                      imgUrl,
-                                      width: 120,
-                                      height: 120,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        width: 120,
-                                        height: 120,
-                                        color: Colors.grey[300],
-                                        child:
-                                            const Icon(Icons.broken_image),
-                                      ),
-                                    );
-                                  },
-                                ),
+                            const SizedBox(height: 10),
+
+                            // ✅ ✅ ✅ AFFICHAGE DES PIÈCES JOINTES (CORRIGÉ)
+                            if (ticket.attachments.isNotEmpty) ...[
+                              const Text(
+                                "Pièces jointes :",
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 10,
+                                children: ticket.attachments.map((url) {
+                                  final isImage = url.endsWith(".jpg") ||
+                                      url.endsWith(".png") ||
+                                      url.endsWith(".jpeg") ||
+                                      url.endsWith(".webp");
 
-                            // Boutons
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: [
-                                  _buildActionButton(
-                                    context,
-                                    icon: Icons.edit,
-                                    color: Colors.blue,
-                                    label: "Modifier",
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              ModifierTicketView(ticket: ticket),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  _buildActionButton(
-                                    context,
-                                    icon: Icons.delete,
-                                    color: Colors.red,
-                                    label: "Supprimer",
+                                  return ActionChip(
+                                    avatar: Icon(
+                                      isImage
+                                          ? Icons.image
+                                          : Icons.insert_drive_file,
+                                    ),
+                                    label: const Text("Ouvrir"),
                                     onPressed: () async {
-                                      final confirm = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text(
-                                              "Confirmer la suppression"),
-                                          content: const Text(
-                                              "Voulez-vous vraiment supprimer ce ticket ?"),
-                                          actions: [
-                                            TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(context, false),
-                                                child: const Text("Annuler")),
-                                            TextButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(context, true),
-                                                child: const Text(
-                                                  "Supprimer",
-                                                  style: TextStyle(
-                                                      color: Colors.red),
-                                                )),
-                                          ],
-                                        ),
-                                      );
-                                      if (confirm == true && ticket.id != null) {
-                                        ticketController.supprimerTicket(ticket.id!);
-                                      }
-                                    },
-                                  ),
-                                  _buildActionButton(
-                                    context,
-                                    icon: Icons.chat,
-                                    color: Colors.green,
-                                    label: "Discussion",
-                                    onPressed: () {
-                                      if (ticket.id != null) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => ChatView(
-                                              ticketId: ticket.id!,
-                                              currentUserId: userId,
-                                              userType: roleUtilisateur,
+                                      try {
+                                        final uri = Uri.parse(url);
+                                        if (!await launchUrl(
+                                          uri,
+                                          mode: LaunchMode.externalApplication,
+                                        )) {
+                                          throw "Impossible d'ouvrir le lien";
+                                        }
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Erreur lors de l'ouverture du fichier",
                                             ),
                                           ),
                                         );
                                       }
                                     },
-                                  ),
-                                ],
+                                  );
+                                }).toList(),
                               ),
+                            ],
+
+                            const SizedBox(height: 12),
+
+                            // ✅ ✅ ✅ BOUTONS ACTIONS
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                _buildActionButton(
+                                  icon: Icons.edit,
+                                  color: Colors.blue,
+                                  label: "Modifier",
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ModifierTicketView(
+                                          ticket: ticket,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildActionButton(
+                                  icon: Icons.delete,
+                                  color: Colors.red,
+                                  label: "Supprimer",
+                                  onPressed: () async {
+                                    final confirm =
+                                        await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text(
+                                            "Confirmer la suppression"),
+                                        content: const Text(
+                                            "Voulez-vous vraiment supprimer ce ticket ?"),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text("Annuler"),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: const Text(
+                                              "Supprimer",
+                                              style:
+                                                  TextStyle(color: Colors.red),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true) {
+                                      await ticketController
+                                          .supprimerTicket(ticket.id!);
+                                    }
+                                  },
+                                ),
+                                _buildActionButton(
+                                  icon: Icons.chat,
+                                  color: Colors.green,
+                                  label: "Discussion",
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ChatView(
+                                          ticketId: ticket.id!,
+                                          currentUserId: userId,
+                                          userType: roleUtilisateur,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -198,12 +228,15 @@ class ListeTicketsView extends StatelessWidget {
           },
         ),
       ),
+
+      // ✅ BOUTON AJOUT
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (_) => CreateTicketView(userId: userId)),
+              builder: (_) => CreateTicketView(userId: userId),
+            ),
           );
         },
         child: const Icon(Icons.add),
@@ -211,7 +244,7 @@ class ListeTicketsView extends StatelessWidget {
     );
   }
 
-  // Couleur selon statut
+  // ✅ Couleur selon statut
   Color _getStatusColor(String status) {
     switch (status) {
       case "Nouveau":
@@ -227,31 +260,30 @@ class ListeTicketsView extends StatelessWidget {
     }
   }
 
-  // Affichage info texte
-  Widget _buildInfoText(String label, String? value) {
+  // ✅ Affichage texte
+  Widget _buildInfoText(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
-        "$label: ${value ?? 'Non définie'}",
+        "$label : $value",
         style: const TextStyle(fontSize: 14),
       ),
     );
   }
 
-  // Boutons
-  Widget _buildActionButton(BuildContext context,
-      {required IconData icon,
-      required Color color,
-      required String label,
-      required VoidCallback onPressed}) {
+  // ✅ Boutons actions
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
     return TextButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, color: color, size: 18),
-      label: Text(label, style: TextStyle(color: color, fontSize: 14)),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        minimumSize: const Size(0, 0),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      label: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 14),
       ),
     );
   }

@@ -34,30 +34,45 @@ class AdminDashboard extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // ✅ MENU ADMIN
+            // ✅ ✅ BOUTON 1 — TOUS LES TICKETS (INTERFACE SUPPORT/ADMIN)
             Card(
               child: ListTile(
                 leading: const Icon(Icons.confirmation_number),
                 title: const Text("Tous les tickets"),
                 onTap: () {
-                  Navigator.pushNamed(context, '/tickets');
+                  Navigator.pushNamed(
+                    context,
+                    '/support-admin-tickets', // ⚠️ Route correcte
+                  );
                 },
               ),
             ),
 
+            // ✅ ✅ BOUTON 2 — GESTION DES UTILISATEURS
             Card(
               child: ListTile(
                 leading: const Icon(Icons.people),
                 title: const Text("Gestion des utilisateurs"),
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/users-management', // à créer
+                  );
+                },
               ),
             ),
 
+            // ✅ ✅ BOUTON 3 — STATISTIQUES
             Card(
               child: ListTile(
                 leading: const Icon(Icons.bar_chart),
                 title: const Text("Statistiques"),
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/admin-stats', // à créer
+                  );
+                },
               ),
             ),
           ],

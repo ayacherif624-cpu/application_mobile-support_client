@@ -1,6 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+
 import '../controllers/ticket_controller.dart';
 import '../models/ticket.dart';
 
@@ -16,19 +19,29 @@ class ModifierTicketView extends StatefulWidget {
 class _ModifierTicketViewState extends State<ModifierTicketView> {
   late TextEditingController titleController;
   late TextEditingController descriptionController;
-  List<String> attachments = [];
-  String priority = '';
-  String category = '';
+
+  late String priorite;
+  late String categorie;
+
   bool isLoading = false;
+
+  // ✅ FICHIERS
+  List<String> existingAttachments = [];
+  List<PlatformFile> newFiles = [];
+  List<String> uploadedUrls = [];
 
   @override
   void initState() {
     super.initState();
-    titleController = TextEditingController(text: widget.ticket.title);
-    descriptionController = TextEditingController(text: widget.ticket.description);
-    priority = widget.ticket.priority;
-    category = widget.ticket.category;
-    attachments = List<String>.from(widget.ticket.attachments);
+
+    titleController = TextEditingController(text: widget.ticket.titre);
+    descriptionController =
+        TextEditingController(text: widget.ticket.description);
+
+    priorite = widget.ticket.priorite;
+    categorie = widget.ticket.categorie;
+
+    existingAttachments = List.from(widget.ticket.attachments);
   }
 
   @override
@@ -38,16 +51,54 @@ class _ModifierTicketViewState extends State<ModifierTicketView> {
     super.dispose();
   }
 
-  Future<void> _pickFiles() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+  // ===========================
+  // ✅ PICK FILES ANDROID SAFE
+  // ===========================
+  Future<void> pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
-      type: FileType.any,
+      withData: true, // ✅ OBLIGATOIRE
     );
 
     if (result != null) {
       setState(() {
-        attachments.addAll(result.paths.whereType<String>());
+        newFiles.addAll(result.files);
       });
+    }
+  }
+
+  // ===========================
+  // ✅ UPLOAD PAR BYTES (SAFE)
+  // ===========================
+  Future<String> uploadFileBytes(
+      PlatformFile file, String ticketId) async {
+    Uint8List? bytes = file.bytes;
+
+    if (bytes == null) {
+      throw Exception("Fichier illisible");
+    }
+
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child("tickets")
+        .child(ticketId)
+        .child(file.name);
+
+    final uploadTask = ref.putData(bytes);
+    final snapshot = await uploadTask;
+
+    return await snapshot.ref.getDownloadURL();
+  }
+
+  // ===========================
+  // ✅ SUPPRESSION STORAGE
+  // ===========================
+  Future<void> deleteFromStorage(String url) async {
+    try {
+      final ref = FirebaseStorage.instance.refFromURL(url);
+      await ref.delete();
+    } catch (e) {
+      debugPrint("Erreur suppression fichier : $e");
     }
   }
 
@@ -60,119 +111,163 @@ class _ModifierTicketViewState extends State<ModifierTicketView> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 6,
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
+                const Text(
                   "Modifier Ticket",
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade800,
+                    color: Colors.blue,
                   ),
                   textAlign: TextAlign.center,
                 ),
+
                 const SizedBox(height: 20),
 
-                // Titre
-                Text("Titre :", style: const TextStyle(fontWeight: FontWeight.bold)),
+                // ✅ TITRE
                 TextField(controller: titleController),
+
                 const SizedBox(height: 12),
 
-                // Description
-                Text("Description :", style: const TextStyle(fontWeight: FontWeight.bold)),
+                // ✅ DESCRIPTION
                 TextField(controller: descriptionController, maxLines: 4),
-                const SizedBox(height: 12),
 
-                // Priorité (Dropdown)
-                Text("Priorité :", style: const TextStyle(fontWeight: FontWeight.bold)),
-                DropdownButtonFormField<String>(
-                  value: priority,
-                  items: ['Faible', 'Moyenne', 'Haute']
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => priority = val);
-                  },
-                ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 15),
 
-                // Catégorie (Dropdown)
-                Text("Catégorie :", style: const TextStyle(fontWeight: FontWeight.bold)),
+                // ✅ PRIORITÉ
                 DropdownButtonFormField<String>(
-                  value: category,
-                  items: ['Technique', 'Comptabilité', 'Autre']
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  value: priorite,
+                  items: ["Faible", "Moyenne", "Haute"]
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e),
+                        ),
+                      )
                       .toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => category = val);
-                  },
+                  onChanged: (val) => setState(() => priorite = val!),
+                  decoration: const InputDecoration(labelText: "Priorité"),
                 ),
+
+                const SizedBox(height: 15),
+
+                // ✅ CATÉGORIE
+                DropdownButtonFormField<String>(
+                  value: categorie,
+                  items: ["Technique", "Comptabilité", "Autre"]
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) => setState(() => categorie = val!),
+                  decoration: const InputDecoration(labelText: "Catégorie"),
+                ),
+
                 const SizedBox(height: 20),
 
-                // Ajouter fichiers
+                // ✅ FICHIERS EXISTANTS
+                if (existingAttachments.isNotEmpty) ...[
+                  const Text("Fichiers existants :"),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    children: existingAttachments.map((url) {
+                      return Chip(
+                        label: const Text("Fichier"),
+                        deleteIcon: const Icon(Icons.close),
+                        onDeleted: () async {
+                          await deleteFromStorage(url);
+                          setState(() {
+                            existingAttachments.remove(url);
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ],
+
+                const SizedBox(height: 15),
+
+                // ✅ AJOUTER FICHIERS
                 ElevatedButton.icon(
-                  onPressed: _pickFiles,
+                  onPressed: pickFiles,
                   icon: const Icon(Icons.attach_file),
                   label: const Text("Ajouter des fichiers"),
                 ),
-                const SizedBox(height: 12),
 
-                // Liste des fichiers
-                attachments.isNotEmpty
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: attachments
-                            .map((f) => Card(
-                                  color: Colors.blue.shade50,
-                                  margin: const EdgeInsets.symmetric(vertical: 4),
-                                  child: ListTile(
-                                    leading: const Icon(Icons.insert_drive_file),
-                                    title: Text(f.split('/').last),
-                                    trailing: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          attachments.remove(f);
-                                        });
-                                      },
-                                      child: const Icon(Icons.close, color: Colors.red),
-                                    ),
-                                  ),
-                                ))
-                            .toList(),
-                      )
-                    : const SizedBox.shrink(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
-                // Enregistrer
+                // ✅ NOUVEAUX FICHIERS
+                if (newFiles.isNotEmpty)
+                  Wrap(
+                    spacing: 10,
+                    children: newFiles.map((file) {
+                      return Chip(
+                        label: Text(file.name),
+                        deleteIcon: const Icon(Icons.close),
+                        onDeleted: () {
+                          setState(() {
+                            newFiles.remove(file);
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+
+                const SizedBox(height: 25),
+
+                // ✅ BOUTON ENREGISTRER
                 ElevatedButton(
                   onPressed: isLoading
                       ? null
                       : () async {
                           setState(() => isLoading = true);
 
-                          TicketModel updatedTicket = TicketModel(
-                            id: widget.ticket.id,
-                            title: titleController.text,
-                            description: descriptionController.text,
-                            priority: priority,
-                            category: category,
-                            attachments: attachments,
-                            status: widget.ticket.status,
-                            userId: widget.ticket.userId,
-                            createdAt: widget.ticket.createdAt,
-                          );
-
                           try {
-                            await ticketController.modifierTicket(widget.ticket.id!, updatedTicket);
+                            uploadedUrls = List.from(existingAttachments);
+
+                            // ✅ UPLOAD NOUVEAUX FICHIERS
+                            for (PlatformFile file in newFiles) {
+                              String url = await uploadFileBytes(
+                                  file, widget.ticket.id!);
+                              uploadedUrls.add(url);
+                            }
+
+                            TicketModel updatedTicket = TicketModel(
+                              id: widget.ticket.id,
+                              userId: widget.ticket.userId,
+                              titre: titleController.text,
+                              description: descriptionController.text,
+                              priorite: priorite,
+                              categorie: categorie,
+                              status: widget.ticket.status,
+                              assignerId: widget.ticket.assignerId,
+                              attachments: uploadedUrls,
+                              createdAt: widget.ticket.createdAt,
+                            );
+
+                            await ticketController.modifierTicket(
+                              widget.ticket.id!,
+                              updatedTicket,
+                            );
+
                             Navigator.pop(context, true);
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Erreur lors de la modification : $e')),
+                              SnackBar(
+                                content:
+                                    Text('Erreur lors de la modification : $e'),
+                              ),
                             );
                           } finally {
                             setState(() => isLoading = false);

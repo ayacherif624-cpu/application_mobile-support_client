@@ -1,20 +1,26 @@
  import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_firebase/views/admin_dashboard.dart';
 import 'package:provider/provider.dart';
 
-// Views
+// ✅ VIEWS AUTH
 import 'views/login_screen.dart';
 import 'views/registerView.dart';
+
+// ✅ VIEWS CLIENT & SUPPORT
 import 'views/SupportHome_view.dart';
 import 'views/ticket_list_screen.dart';
 import 'views/create_ticket_screen.dart';
+import 'views/home_client.dart';
 
-import 'views/home_client.dart'; // ✅ AJOUT IMPORTANT
+// ✅ VIEWS ADMIN
+import 'views/admin_dashboard.dart';
+import 'views/admin_ticket_list.dart';
+import 'views/admin_users_view.dart';
+import 'views/admin_stats_view.dart';
 
-// Controllers
-import '../controllers/ticket_controller.dart';
-import '../controllers/auth_controller.dart';
+// ✅ CONTROLLERS (SANS ../)
+import 'controllers/ticket_controller.dart';
+import 'controllers/auth_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,16 +48,17 @@ class DevMobSupportClientApp extends StatelessWidget {
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/',
       routes: {
+        // ✅ AUTH
         '/': (context) => const LoginView(),
         '/register': (context) => const RegisterView(),
 
-        // ✅ CLIENT → HOME CLIENT
+        // ✅ CLIENT
         '/client': (context) {
           final authController =
               Provider.of<AuthController>(context, listen: false);
           final user = authController.currentUser;
           if (user == null) return const LoginView();
-          return HomeClient(); // ✅ CORRIGÉ
+          return HomeClient();
         },
 
         // ✅ SUPPORT
@@ -66,7 +73,7 @@ class DevMobSupportClientApp extends StatelessWidget {
           );
         },
 
-        // ✅ ADMIN
+        // ✅ ADMIN DASHBOARD
         '/admin': (context) {
           final authController =
               Provider.of<AuthController>(context, listen: false);
@@ -78,7 +85,7 @@ class DevMobSupportClientApp extends StatelessWidget {
           );
         },
 
-        // ✅ CRÉER TICKET
+        // ✅ CRÉATION TICKET
         '/create-ticket': (context) {
           final authController =
               Provider.of<AuthController>(context, listen: false);
@@ -86,6 +93,11 @@ class DevMobSupportClientApp extends StatelessWidget {
           if (user == null) return const LoginView();
           return CreateTicketView(userId: user.uid);
         },
+
+        // ✅ ADMIN ROUTES
+        '/support-admin-tickets': (context) =>  AdminTicketListView(),
+        '/users-management': (context) =>  AdminUsersView(),
+        '/admin-stats': (context) => AdminStatsView(),
       },
     );
   }

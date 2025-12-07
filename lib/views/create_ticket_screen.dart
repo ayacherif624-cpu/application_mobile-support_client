@@ -1,6 +1,8 @@
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../controllers/ticket_controller.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../models/ticket.dart';
 
 class CreateTicketView extends StatefulWidget {
@@ -14,67 +16,84 @@ class CreateTicketView extends StatefulWidget {
 class _CreateTicketViewState extends State<CreateTicketView> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String _priority = 'Faible';
-  String _category = 'Technique';
-  List<String> _attachments = [];
 
-  final TicketController ticketController = TicketController();
+  String priorite = "Moyenne";
+  String categorie = "Technique";
+
   bool isLoading = false;
 
-  // Sélectionner des fichiers
-  void _pickFiles() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+  // ✅ FICHIERS LOCAUX SEULEMENT
+  List<PlatformFile> pickedFiles = [];
+
+  // ===========================
+  // ✅ PICK FILES (GRATUIT)
+  // ===========================
+  Future<void> pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
-      type: FileType.any,
     );
 
     if (result != null) {
       setState(() {
-        _attachments.addAll(result.paths.whereType<String>());
+        pickedFiles = result.files;
       });
     }
   }
 
-  // Créer un ticket
+  // ===========================
+  // ✅ CREATE TICKET (SANS UPLOAD)
+  // ===========================
   void _createTicket() async {
-    if (_titleController.text.isEmpty || _descriptionController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir tous les champs')),
-      );
+    if (_titleController.text.isEmpty ||
+        _descriptionController.text.isEmpty) {
+      showSnack("Veuillez remplir tous les champs");
       return;
     }
 
     setState(() => isLoading = true);
 
-    TicketModel ticket = TicketModel(
-      title: _titleController.text,
-      description: _descriptionController.text,
-      priority: _priority,
-      category: _category,
-      attachments: _attachments,
-      userId: widget.userId,
-    );
-
     try {
-      await ticketController.ajouterTicket(ticket);
+      final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      // Message de succès
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ticket ajouté avec succès ✅'),
-          duration: Duration(seconds: 2),
-        ),
+      // ✅ ON GARDE JUSTE LES NOMS DES FICHIERS
+      List<String> fileNames =
+          pickedFiles.map((file) => file.name).toList();
+
+      TicketModel ticket = TicketModel(
+        userId: uid,
+        titre: _titleController.text,
+        description: _descriptionController.text,
+        priorite: priorite,
+        categorie: categorie,
+        status: "Nouveau",
+        assignerId: null,
+        attachments: fileNames, // ✅ JUSTE LES NOMS
+        createdAt: DateTime.now(),
       );
 
-      // Retour à la liste avec signal pour rafraîchir
+      await FirebaseFirestore.instance
+          .collection('tickets')
+          .add(ticket.toMap());
+
+      showSnack("✅ Ticket créé avec succès");
       Navigator.pop(context, true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la création du ticket : $e')),
-      );
+      showSnack("❌ Erreur : $e");
     } finally {
       setState(() => isLoading = false);
     }
+  }
+
+  void showSnack(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 
   @override
@@ -84,115 +103,84 @@ class _CreateTicketViewState extends State<CreateTicketView> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 6,
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  "Nouveau Ticket",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade800,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
                 TextField(
                   controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: "Titre",
-                    prefixIcon: const Icon(Icons.title),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                  ),
+                  decoration: const InputDecoration(labelText: "Titre"),
                 ),
-                const SizedBox(height: 15),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _descriptionController,
-                  maxLines: 5,
-                  decoration: InputDecoration(
-                    labelText: "Description",
-                    prefixIcon: const Icon(Icons.description),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                  ),
+                  maxLines: 4,
+                  decoration: const InputDecoration(labelText: "Description"),
                 ),
+
                 const SizedBox(height: 15),
-                DropdownButtonFormField<String>(
-                  value: _priority,
-                  items: ['Faible', 'Moyenne', 'Haute']
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+
+                DropdownButtonFormField(
+                  value: priorite,
+                  items: ["Faible", "Moyenne", "Haute"]
+                      .map((e) =>
+                          DropdownMenuItem(value: e, child: Text(e)))
                       .toList(),
-                  onChanged: (val) => setState(() => _priority = val!),
-                  decoration: InputDecoration(
-                    labelText: "Priorité",
-                    prefixIcon: const Icon(Icons.priority_high),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                  ),
+                  onChanged: (v) => setState(() => priorite = v!),
+                  decoration: const InputDecoration(labelText: "Priorité"),
                 ),
-                const SizedBox(height: 15),
-                DropdownButtonFormField<String>(
-                  value: _category,
-                  items: ['Technique', 'Comptabilité', 'Autre']
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+
+                const SizedBox(height: 10),
+
+                DropdownButtonFormField(
+                  value: categorie,
+                  items: ["Technique", "Comptabilité", "Autre"]
+                      .map((e) =>
+                          DropdownMenuItem(value: e, child: Text(e)))
                       .toList(),
-                  onChanged: (val) => setState(() => _category = val!),
-                  decoration: InputDecoration(
-                    labelText: "Catégorie",
-                    prefixIcon: const Icon(Icons.category),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                  ),
+                  onChanged: (v) => setState(() => categorie = v!),
+                  decoration: const InputDecoration(labelText: "Catégorie"),
                 ),
+
                 const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: _pickFiles,
+
+                // ✅ JOINDRE DES FICHIERS (LOCAL)
+                OutlinedButton.icon(
+                  onPressed: pickFiles,
                   icon: const Icon(Icons.attach_file),
                   label: const Text("Joindre des fichiers"),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
                 ),
-                const SizedBox(height: 15),
-                _attachments.isNotEmpty
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: _attachments
-                            .map((f) => Card(
-                                  color: Colors.blue.shade50,
-                                  margin: const EdgeInsets.symmetric(vertical: 4),
-                                  child: ListTile(
-                                    leading: const Icon(Icons.insert_drive_file),
-                                    title: Text(f.split('/').last),
-                                  ),
-                                ))
-                            .toList(),
-                      )
-                    : const SizedBox.shrink(),
+
+                const SizedBox(height: 10),
+
+                if (pickedFiles.isNotEmpty)
+                  Wrap(
+                    spacing: 10,
+                    children: pickedFiles.map((file) {
+                      return Chip(
+                        label: Text(file.name),
+                        deleteIcon: const Icon(Icons.close),
+                        onDeleted: () {
+                          setState(() {
+                            pickedFiles.remove(file);
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+
                 const SizedBox(height: 25),
+
                 ElevatedButton(
                   onPressed: isLoading ? null : _createTicket,
                   child: isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(color: Colors.white),
-                        )
-                      : const Text("Créer Ticket", style: TextStyle(fontSize: 16)),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Créer Ticket"),
                 ),
               ],
             ),
