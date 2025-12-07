@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/ticket.dart';
 
@@ -45,6 +45,7 @@ class TicketController extends ChangeNotifier {
   Future<void> modifierTicket(String ticketId, TicketModel ticket) async {
     try {
       await _ticketsRef.doc(ticketId).update(ticket.toMap());
+      notifyListeners();
     } catch (e) {
       debugPrint("❌ Erreur modification: $e");
       rethrow;
@@ -52,21 +53,24 @@ class TicketController extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ UPDATE — Changer statut
+  // ✅ UPDATE — Changer statut (support ET admin)
   // ============================================================
   Future<void> changerStatut({
     required String ticketId,
     required String nouveauStatut,
     required String roleUtilisateur,
   }) async {
-    if (roleUtilisateur != 'support') {
-      throw Exception("Seul le support peut modifier le statut");
+    // Autoriser admin et support
+    if (roleUtilisateur != 'support' && roleUtilisateur != 'admin') {
+      throw Exception("Seul le support ou l'admin peut modifier le statut");
     }
 
     try {
       await _ticketsRef.doc(ticketId).update({
         'status': nouveauStatut,
       });
+
+      notifyListeners();
     } catch (e) {
       debugPrint("❌ Erreur changement statut: $e");
       rethrow;
@@ -79,6 +83,7 @@ class TicketController extends ChangeNotifier {
   Future<void> supprimerTicket(String ticketId) async {
     try {
       await _ticketsRef.doc(ticketId).delete();
+      notifyListeners();
     } catch (e) {
       debugPrint("❌ Erreur suppression: $e");
       rethrow;
@@ -108,7 +113,7 @@ class TicketController extends ChangeNotifier {
   }
 
   // ============================================================
-  // ✅ ✅ ✅ ASSIGNATION CORRECTE & STABLE
+  // ✅ ASSIGNATION CORRECTE & STABLE
   // ============================================================
   Future<void> assignTicket({
     required String ticketId,
@@ -119,6 +124,25 @@ class TicketController extends ChangeNotifier {
         'assignerId': supportId,
         'status': 'En cours',
       });
+
+      // Mettre à jour la liste locale si présente
+      final idx = tickets.indexWhere((t) => t.id == ticketId);
+      if (idx != -1) {
+        final old = tickets[idx];
+        tickets[idx] = TicketModel(
+          id: old.id,
+          titre: old.titre,
+          description: old.description,
+          priorite: old.priorite,
+          categorie: old.categorie,
+          status: 'En cours',
+          userId: old.userId,
+          assignerId: supportId,
+          attachments: old.attachments,
+          createdAt: old.createdAt,
+        );
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint("❌ Erreur assignation: $e");
       rethrow;
@@ -182,5 +206,63 @@ class TicketController extends ChangeNotifier {
     } catch (e) {
       debugPrint("❌ Erreur message vu: $e");
     }
+  }
+
+  // ============================================================
+  // ✅ ADMIN — Modifier la priorité
+  // ============================================================
+  Future<void> changerPriorite({
+    required String ticketId,
+    required String nouvellePriorite,
+    required String roleUtilisateur,
+  }) async {
+    if (roleUtilisateur != 'admin') {
+      throw Exception("Seul l'admin peut modifier la priorité");
+    }
+
+    try {
+      await _ticketsRef.doc(ticketId).update({
+        'priorite': nouvellePriorite,
+      });
+
+      // Optionnel : mettre à jour la copie locale si chargée
+      final idx = tickets.indexWhere((t) => t.id == ticketId);
+      if (idx != -1) {
+        final old = tickets[idx];
+        tickets[idx] = TicketModel(
+          id: old.id,
+          titre: old.titre,
+          description: old.description,
+          priorite: nouvellePriorite,
+          categorie: old.categorie,
+          status: old.status,
+          userId: old.userId,
+          assignerId: old.assignerId,
+          attachments: old.attachments,
+          createdAt: old.createdAt,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("❌ Erreur changement priorité: $e");
+      rethrow;
+    }
+  }
+
+  // ============================================================
+  // ✅ STREAM — Tous les tickets (pour la liste admin)
+  // ============================================================
+  Stream<List<TicketModel>> getTousLesTickets() {
+    return _ticketsRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return TicketModel.fromDoc(
+          doc.id,
+          doc.data() as Map<String, dynamic>,
+        );
+      }).toList();
+    });
   }
 }

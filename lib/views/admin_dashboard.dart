@@ -12,33 +12,45 @@ class AdminDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Sécurité UI : seul l’admin peut voir ce dashboard
+    if (roleUtilisateur != 'admin') {
+      return const Scaffold(
+        body: Center(
+          child: Text("⛔ Accès refusé"),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Espace Administrateur"),
         backgroundColor: Colors.blue,
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             // ✅ INFOS ADMIN
-            Text(
-              "ID : $userId",
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            Text(
-              "Rôle : $roleUtilisateur",
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            Card(
+              elevation: 2,
+              child: ListTile(
+                leading: const Icon(Icons.account_circle),
+                title: Text("ID : $userId"),
+                subtitle: Text("Rôle : $roleUtilisateur"),
+              ),
             ),
 
             const SizedBox(height: 20),
 
-            // ✅ BOUTON 1 — TOUS LES TICKETS
+            // ✅ TOUS LES TICKETS
             Card(
               child: ListTile(
                 leading: const Icon(Icons.confirmation_number),
                 title: const Text("Tous les tickets"),
+                subtitle: const Text("Consulter tous les tickets"),
                 onTap: () {
                   Navigator.pushNamed(
                     context,
@@ -48,7 +60,7 @@ class AdminDashboard extends StatelessWidget {
               ),
             ),
 
-            // ✅ ✅ NOUVEAU — TICKETS NON AFFECTÉS
+            // ✅ TICKETS NON AFFECTÉS
             Card(
               child: ListTile(
                 leading: const Icon(Icons.assignment_ind),
@@ -63,25 +75,27 @@ class AdminDashboard extends StatelessWidget {
               ),
             ),
 
-            // ✅ BOUTON 2 — GESTION DES UTILISATEURS
+            // ✅ ✅ NOUVEAU — GESTION DES PRIORITÉS
             Card(
               child: ListTile(
-                leading: const Icon(Icons.people),
-                title: const Text("Gestion des utilisateurs"),
+                leading: const Icon(Icons.priority_high),
+                title: const Text("Gestion des priorités"),
+                subtitle: const Text("Modifier la priorité des tickets"),
                 onTap: () {
                   Navigator.pushNamed(
                     context,
-                    '/users-management',
+                    '/admin-priorites', // ✅ nouvelle route
                   );
                 },
               ),
             ),
 
-            // ✅ BOUTON 3 — STATISTIQUES
+            // ✅ STATISTIQUES
             Card(
               child: ListTile(
                 leading: const Icon(Icons.bar_chart),
                 title: const Text("Statistiques"),
+                subtitle: const Text("Analyse des performances"),
                 onTap: () {
                   Navigator.pushNamed(
                     context,
