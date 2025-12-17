@@ -152,7 +152,7 @@ class _LoginViewState extends State<LoginView> {
                       Navigator.pushNamed(context, '/register');
                     },
                     child: const Text(
-                      "Pas de compte ? S'inscrire",
+                      "👤+ Pas de compte ? S'inscrire",
                       style: TextStyle(color: Colors.blue),
                     ),
                   ),
