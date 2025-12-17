@@ -74,16 +74,16 @@ class SupportTicketsView extends StatelessWidget {
 
     switch (status) {
       case "En cours":
-        color = Colors.orange;
+        color = const Color.fromARGB(255, 200, 136, 40);
         break;
       case "Résolu":
-        color = Colors.green;
+        color = const Color.fromARGB(255, 76, 230, 81);
         break;
       case "Fermé":
-        color = Colors.grey;
+        color = const Color.fromARGB(255, 219, 26, 26);
         break;
       default:
-        color = Colors.blue;
+        color = const Color.fromARGB(255, 29, 128, 210);
     }
 
     return Container(
