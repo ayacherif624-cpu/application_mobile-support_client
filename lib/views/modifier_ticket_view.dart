@@ -107,7 +107,7 @@ class _ModifierTicketViewState extends State<ModifierTicketView> {
     final ticketController = Provider.of<TicketController>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Modifier Ticket")),
+      appBar: AppBar(title: const Text("🖊️Modifier Ticket")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Card(
