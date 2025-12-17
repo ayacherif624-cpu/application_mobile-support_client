@@ -100,7 +100,7 @@ class _SupportHomeViewState extends State<SupportHomeView> {
           TextButton.icon(
             onPressed: () => logout(context),
             icon: const Icon(Icons.logout, color: Colors.white, size: 18),
-            label: const Text("Déconnexion", style: TextStyle(color: Colors.white)),
+            label: const Text("⬅️Déconnexion", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

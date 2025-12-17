@@ -114,7 +114,7 @@ class _HomeClientState extends State<HomeClient> {
                               size: 18,
                             ),
                             label: const Text(
-                              "Déconnexion",
+                              "⬅️Déconnexion",
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,

@@ -52,7 +52,7 @@ class AdminDashboard extends StatelessWidget {
               size: 18,
             ),
             label: const Text(
-              "Déconnexion",
+              "⬅️Déconnexion",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 13,
