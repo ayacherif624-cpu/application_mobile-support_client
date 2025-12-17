@@ -1,7 +1,7 @@
  import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'home_client.dart';
+import 'home_client_view.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});

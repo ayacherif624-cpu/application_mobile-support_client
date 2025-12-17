@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/ticket_controller.dart';
-import '../models/ticket.dart';
-import 'create_ticket_screen.dart';
+import '../models/ticket_model.dart';
+import 'create_ticket_view.dart';
 import 'modifier_ticket_view.dart';
 import 'chat_view.dart';
 
@@ -230,7 +230,7 @@ class ListeTicketsView extends StatelessWidget {
                                             builder: (_) => ChatView(
                                               ticketId: ticket.id!,
                                               currentUserId: userId,
-                                              userType: roleUtilisateur,
+                                               userRole: roleUtilisateur,
                                             ),
                                           ),
                                         );

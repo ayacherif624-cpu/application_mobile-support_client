@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/ticket_controller.dart';
-import '../models/ticket.dart';
+import '../models/ticket_model.dart';
 
 class AdminTicketListView extends StatefulWidget {
   const AdminTicketListView({super.key});

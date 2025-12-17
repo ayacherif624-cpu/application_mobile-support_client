@@ -1,6 +1,6 @@
  import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../models/ticket.dart';
+import '../models/ticket_model.dart';
 
 class TicketController extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -52,30 +52,8 @@ class TicketController extends ChangeNotifier {
     }
   }
 
-  // ============================================================
-  // ✅ UPDATE — Changer statut (support ET admin)
-  // ============================================================
-  Future<void> changerStatut({
-    required String ticketId,
-    required String nouveauStatut,
-    required String roleUtilisateur,
-  }) async {
-    // Autoriser admin et support
-    if (roleUtilisateur != 'support' && roleUtilisateur != 'admin') {
-      throw Exception("Seul le support ou l'admin peut modifier le statut");
-    }
-
-    try {
-      await _ticketsRef.doc(ticketId).update({
-        'status': nouveauStatut,
-      });
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint("❌ Erreur changement statut: $e");
-      rethrow;
-    }
-  }
+   
+  
 
   // ============================================================
   // ✅ DELETE — Supprimer ticket
@@ -116,38 +94,40 @@ class TicketController extends ChangeNotifier {
   // ✅ ASSIGNATION CORRECTE & STABLE
   // ============================================================
   Future<void> assignTicket({
-    required String ticketId,
-    required String supportId,
-  }) async {
-    try {
-      await _ticketsRef.doc(ticketId).update({
-        'assignerId': supportId,
-        'status': 'En cours',
-      });
+  required String ticketId,
+  required String supportId,
+}) async {
+  try {
+    await _ticketsRef.doc(ticketId).update({
+      'assignerId': supportId,
+      // ❌ On retire totalement le statut "Résolu"
+      // 'status': 'Résolu',
+    });
 
-      // Mettre à jour la liste locale si présente
-      final idx = tickets.indexWhere((t) => t.id == ticketId);
-      if (idx != -1) {
-        final old = tickets[idx];
-        tickets[idx] = TicketModel(
-          id: old.id,
-          titre: old.titre,
-          description: old.description,
-          priorite: old.priorite,
-          categorie: old.categorie,
-          status: 'En cours',
-          userId: old.userId,
-          assignerId: supportId,
-          attachments: old.attachments,
-          createdAt: old.createdAt,
-        );
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint("❌ Erreur assignation: $e");
-      rethrow;
+    // Mise à jour locale
+    final idx = tickets.indexWhere((t) => t.id == ticketId);
+    if (idx != -1) {
+      final old = tickets[idx];
+      tickets[idx] = TicketModel(
+        id: old.id,
+        titre: old.titre,
+        description: old.description,
+        priorite: old.priorite,
+        categorie: old.categorie,
+        status: old.status,        // ⭐ Le statut NE CHANGE PAS
+        userId: old.userId,
+        assignerId: supportId,
+        attachments: old.attachments,
+        createdAt: old.createdAt,
+      );
+      notifyListeners();
     }
+  } catch (e) {
+    debugPrint("❌ Erreur assignation: $e");
+    rethrow;
   }
+}
+
 
   // ============================================================
   // ✅ CHAT — ENVOYER MESSAGE

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import '../controllers/chat_controller.dart';
-import '../models/message.dart';
+import '../models/message_model.dart';
+import '../services/notification_service.dart';
 
 class ChatView extends StatefulWidget {
   final String ticketId;
   final String currentUserId;
-  final String userType;
+  final String userRole; // "client" ou "support"
 
   const ChatView({
     super.key,
     required this.ticketId,
     required this.currentUserId,
-    required this.userType,
+    required this.userRole,
   });
 
   @override
@@ -26,16 +27,9 @@ class _ChatViewState extends State<ChatView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F6FF),
-      appBar: AppBar(
-        title: const Text("Discussion"),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text("Discussion")),
       body: Column(
         children: [
-          // ✅ Messages
           Expanded(
             child: StreamBuilder<List<MessageModel>>(
               stream: chatController.getMessages(widget.ticketId),
@@ -46,6 +40,22 @@ class _ChatViewState extends State<ChatView> {
 
                 final messages = snapshot.data!;
 
+                // Notifications pour les nouveaux messages
+                if (messages.isNotEmpty) {
+                  final lastMessage = messages.last;
+                  if (lastMessage.senderId != widget.currentUserId &&
+                      !(lastMessage.seenBy?.contains(widget.currentUserId) ?? false)) {
+                    NotificationService.showNotification(
+                      title: "Nouveau message",
+                      body: lastMessage.text,
+                    );
+                  }
+                }
+
+                if (messages.isEmpty) {
+                  return const Center(child: Text("Aucun message."));
+                }
+
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(12),
@@ -55,67 +65,33 @@ class _ChatViewState extends State<ChatView> {
                     final isMe = msg.senderId == widget.currentUserId;
 
                     return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Row(
-                        mainAxisAlignment:
-                            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (!isMe)
-                            const CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.blue,
-                              child: Icon(Icons.person,
-                                  size: 16, color: Colors.white),
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.blue : Colors.grey[200],
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: isMe
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              msg.text,
+                              style: TextStyle(
+                                  color: isMe ? Colors.white : Colors.black87),
                             ),
-
-                          const SizedBox(width: 8),
-
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 10),
-                            margin: const EdgeInsets.only(bottom: 10),
-                            constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.75),
-                            decoration: BoxDecoration(
-                              color: isMe ? Colors.blue : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 4,
-                                )
-                              ],
+                            const SizedBox(height: 4),
+                            Text(
+                              "${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}",
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: isMe ? Colors.white70 : Colors.grey),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  msg.text,
-                                  style: TextStyle(
-                                    color:
-                                        isMe ? Colors.white : Colors.black87,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}",
-                                  style: TextStyle(
-                                    color: isMe
-                                        ? Colors.white70
-                                        : Colors.grey,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          if (isMe) const SizedBox(width: 8),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -123,70 +99,60 @@ class _ChatViewState extends State<ChatView> {
               },
             ),
           ),
-
-          // ✅ Zone d’envoi
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(color: Colors.black12, blurRadius: 4),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: "Écrire un message...",
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 20),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                CircleAvatar(
-                  backgroundColor: Colors.blue,
-                  child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white),
-                    onPressed: sendMessage,
-                  ),
-                )
-              ],
-            ),
-          )
+          _buildMessageInput(),
         ],
       ),
     );
   }
 
-  void sendMessage() {
-    if (_controller.text.trim().isEmpty) return;
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      color: Colors.white,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: "Écrire un message...",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey[100],
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send, color: Colors.blue),
+            onPressed: _sendMessage,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendMessage() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
 
     final message = MessageModel(
-      id: '',
+      id: "",
       senderId: widget.currentUserId,
-      senderRole: widget.userType,
-      text: _controller.text.trim(),
+      senderRole: widget.userRole,
+      text: text,
       createdAt: DateTime.now(),
       seenBy: [widget.currentUserId],
     );
 
-    chatController.sendMessage(
-      ticketId: widget.ticketId,
-      message: message,
-    );
-
+    chatController.sendMessage(ticketId: widget.ticketId, message: message);
     _controller.clear();
 
-    Future.delayed(const Duration(milliseconds: 300), () {
+    // Scroll vers le bas
+    Future.delayed(const Duration(milliseconds: 200), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,

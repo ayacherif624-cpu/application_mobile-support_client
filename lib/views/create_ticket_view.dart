@@ -3,7 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/ticket.dart';
+import '../models/ticket_model.dart';
 
 class CreateTicketView extends StatefulWidget {
   final String userId;

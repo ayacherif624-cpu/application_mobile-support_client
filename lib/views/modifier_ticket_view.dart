@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import '../controllers/ticket_controller.dart';
-import '../models/ticket.dart';
+import '../models/ticket_model.dart';
 
 class ModifierTicketView extends StatefulWidget {
   final TicketModel ticket;
@@ -144,7 +144,7 @@ class _ModifierTicketViewState extends State<ModifierTicketView> {
                 // ✅ PRIORITÉ
                 DropdownButtonFormField<String>(
                   value: priorite,
-                  items: ["Faible", "moyenne", "Haute"]
+                  items: ["Faible", "Moyenne", "Haute"]
                       .map(
                         (e) => DropdownMenuItem(
                           value: e,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'create_ticket_screen.dart';
-import 'ticket_list_screen.dart';
+import 'create_ticket_view.dart';
+import 'ticket_list_view.dart';
 
 class HomeClient extends StatefulWidget {
   const HomeClient({super.key});

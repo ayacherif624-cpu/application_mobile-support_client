@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class MessageModel {
   final String id;
   final String senderId;
@@ -15,13 +17,13 @@ class MessageModel {
     required this.seenBy,
   });
 
-  factory MessageModel.fromMap(Map<String, dynamic> map, String id) {
+  factory MessageModel.fromMap(String id, Map<String, dynamic> map) {
     return MessageModel(
       id: id,
-      senderId: map['senderId'],
-      senderRole: map['senderRole'],
-      text: map['text'],
-      createdAt: map['createdAt'].toDate(),
+      senderId: map['senderId'] ?? '',
+      senderRole: map['senderRole'] ?? '',
+      text: map['text'] ?? '',
+      createdAt: (map['createdAt'] as Timestamp).toDate(),
       seenBy: List<String>.from(map['seenBy'] ?? []),
     );
   }
@@ -31,7 +33,7 @@ class MessageModel {
       'senderId': senderId,
       'senderRole': senderRole,
       'text': text,
-      'createdAt': createdAt,
+      'createdAt': FieldValue.serverTimestamp(),
       'seenBy': seenBy,
     };
   }

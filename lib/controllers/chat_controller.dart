@@ -1,48 +1,89 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/message.dart';
+import '../models/message_model.dart';
+import '../services/notification_service.dart'; // Assure-toi d’avoir ce fichier
 
 class ChatController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // ✅ Envoyer un message
+  /// Stream des messages d’un ticket
+  Stream<List<MessageModel>> getMessages(String ticketId) {
+    return firestore
+        .collection("tickets")
+        .doc(ticketId)
+        .collection("messages")
+        .orderBy("createdAt")
+        .snapshots()
+        .map((query) =>
+            query.docs.map((doc) => MessageModel.fromMap(doc.id, doc.data())).toList());
+  }
+
+  /// Envoyer un message
   Future<void> sendMessage({
     required String ticketId,
     required MessageModel message,
   }) async {
-    await _firestore
-        .collection('tickets')
+    final messageRef = firestore
+        .collection("tickets")
         .doc(ticketId)
-        .collection('messages')
-        .add(message.toMap());
+        .collection("messages")
+        .doc();
+
+    await messageRef.set(message.toMap());
+
+    // Incrémenter le compteur "non lu" pour l’autre rôle
+    String otherRole = message.senderRole == "client" ? "support" : "client";
+    await firestore.collection("tickets").doc(ticketId).update({
+      "${otherRole}_unread": FieldValue.increment(1),
+      "lastMessage": message.text,
+      "lastMessageTime": FieldValue.serverTimestamp(),
+    });
   }
 
-  // ✅ Lire messages en temps réel
-  Stream<List<MessageModel>> getMessages(String ticketId) {
-    return _firestore
-        .collection('tickets')
+  /// Marquer un message comme lu
+  Future<void> markAsSeen({
+    required String ticketId,
+    required String messageId,
+    required String userId,
+  }) async {
+    await firestore
+        .collection("tickets")
         .doc(ticketId)
-        .collection('messages')
-        .orderBy('createdAt')
+        .collection("messages")
+        .doc(messageId)
+        .update({
+      'seenBy': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  /// Stream des messages avec notification pour les nouveaux messages
+  Stream<List<MessageModel>> getMessagesWithNotification(
+      String ticketId, String currentUserId) {
+    return firestore
+        .collection("tickets")
+        .doc(ticketId)
+        .collection("messages")
+        .orderBy("createdAt")
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) =>
-                  MessageModel.fromMap(doc.data(), doc.id))
-              .toList(),
-        );
-  }
+        .map((query) {
+      final messages = query.docs
+          .map((doc) => MessageModel.fromMap(doc.id, doc.data()))
+          .toList();
 
-  // ✅ Marquer messages comme vus
-  Future<void> markAsSeen(
-      String ticketId, String messageId, String userId) async {
-    final ref = _firestore
-        .collection('tickets')
-        .doc(ticketId)
-        .collection('messages')
-        .doc(messageId);
+      // Vérifier le dernier message pour envoyer notification
+      if (messages.isNotEmpty) {
+        final lastMessage = messages.last;
 
-    await ref.update({
-      'seenBy': FieldValue.arrayUnion([userId])
+        // Si le message est envoyé par l'autre rôle et non encore lu
+        if (lastMessage.senderId != currentUserId &&
+            !(lastMessage.seenBy.contains(currentUserId))) {
+          NotificationService.showNotification(
+            title: "Nouveau message",
+            body: lastMessage.text,
+          );
+        }
+      }
+
+      return messages;
     });
   }
 }

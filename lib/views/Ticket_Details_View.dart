@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/ticket.dart';
+import '../models/ticket_model.dart';
 
 class DetailTicketAdminView extends StatelessWidget {
   final TicketModel ticket;
