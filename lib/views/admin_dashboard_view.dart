@@ -122,7 +122,7 @@ class AdminDashboard extends StatelessWidget {
                   icon: Icons.confirmation_number,
                   title: "Tous les tickets",
                   subtitle: "Liste complète",
-                  color: Colors.indigo,
+                  color: const Color.fromARGB(255, 59, 81, 209),
                   onTap: () {
                     Navigator.pushNamed(context, '/support-admin-tickets');
                   },
@@ -131,7 +131,7 @@ class AdminDashboard extends StatelessWidget {
                   icon: Icons.assignment_ind,
                   title: "À affecter",
                   subtitle: "Sans agent",
-                  color: Colors.orange,
+                  color: const Color.fromARGB(255, 218, 155, 62),
                   onTap: () {
                     Navigator.pushNamed(context, '/tickets-a-affecter');
                   },
@@ -140,7 +140,7 @@ class AdminDashboard extends StatelessWidget {
                   icon: Icons.bar_chart,
                   title: "Statistiques",
                   subtitle: "Analyse totale",
-                  color: Colors.green,
+                  color: const Color.fromARGB(255, 147, 234, 150),
                   onTap: () {
                     Navigator.pushNamed(context, '/admin-stats');
                   },
